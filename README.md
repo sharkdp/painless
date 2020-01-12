@@ -10,16 +10,16 @@ PAINLESS_PARAMETER(my_parameter, 3.14f);
 ```
 The variable `my_parameter` can then be used as if it was a normal `float` value.
 
-At runtime, `painless` creates a file called `/tmp/painless/my_parameter` with the following content:
+At runtime, `painless` then creates a file called `/tmp/painless/my_parameter` with the following content:
 ``` python
 3.14
 # Parameter 'my_parameter'
 # Default value: '3.14'
 ```
-At the same time, it also spawns a thread that watches for modifications of that file.
-Changes to the value in the first line will immediately be reflected in the running program.
+In the background, it spawns a thread that watches for modifications to that file.
+Changes to the value will immediately be reflected in the running program.
 
-## Example program
+## Example
 
 ```c++
 #include <painless/parameter.h>
