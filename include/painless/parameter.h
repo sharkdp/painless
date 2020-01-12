@@ -21,9 +21,9 @@
 namespace painless {
 
 inline std::string get_base_path() {
-  const char *tmpdir = nullptr;
+  const char* tmpdir = nullptr;
   if ((tmpdir = getenv("TMPDIR")) == nullptr) {
-      tmpdir = "/tmp";
+    tmpdir = "/tmp";
   }
   return tmpdir + std::string{"/painless/"};
 }
@@ -89,16 +89,16 @@ class Parameter {
       if (errno == EEXIST) {
         struct stat sb;
         if (lstat(m_base_path.c_str(), &sb) != 0) {
-          throw std::runtime_error{"cannot stat() " + m_base_path +
-                                   std::strerror(errno)};
+          throw std::runtime_error{"cannot stat() '" + m_base_path +
+                                   "': " + std::strerror(errno)};
         }
         if ((sb.st_mode & S_IFMT) != S_IFDIR) {
-          throw std::runtime_error{"mkdir " + m_base_path +
-                                   " failed: " + std::strerror(errno)};
+          throw std::runtime_error{"mkdir '" + m_base_path +
+                                   "' failed: " + std::strerror(errno)};
         }
       } else {
-        throw std::runtime_error{"mkdir " + m_base_path +
-                                 " failed: " + std::strerror(errno)};
+        throw std::runtime_error{"mkdir '" + m_base_path + "' failed" +
+                                 std::strerror(errno)};
       }
     }
 
@@ -161,9 +161,7 @@ class Parameter {
   const char* name() const { return m_parameter_name; }
 
  private:
-  std::string getFilename() const {
-    return m_base_path + m_parameter_name;
-  }
+  std::string getFilename() const { return m_base_path + m_parameter_name; }
 
   void fileWatcher() {
     static constexpr size_t EVENT_SIZE = sizeof(inotify_event);
