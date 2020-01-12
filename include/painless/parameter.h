@@ -1,15 +1,16 @@
 #ifndef PAINLESS_PARAMETER_H
 #define PAINLESS_PARAMETER_H
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <condition_variable>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -19,7 +20,13 @@
 
 namespace painless {
 
-static constexpr const char* BASE_PATH = "/tmp/painless/";
+inline std::string get_base_path() {
+  const char *tmpdir = nullptr;
+  if ((tmpdir = getenv("TMPDIR")) == nullptr) {
+      tmpdir = "/tmp";
+  }
+  return tmpdir + std::string{"/painless/"};
+}
 
 namespace parser {
 
@@ -29,13 +36,11 @@ inline bool from_string(const std::string& input, T& value) {
   return static_cast<bool>(ss >> value);
 }
 
-template <>
 inline bool from_string(const std::string& input, bool& value) {
   std::istringstream ss(input);
   return static_cast<bool>(ss >> std::boolalpha >> value);
 }
 
-template <>
 inline bool from_string(const std::string& input, std::string& value) {
   value = input;
   return true;
@@ -52,7 +57,6 @@ inline std::string to_string(const T& value) {
   return ss.str();
 }
 
-template <>
 inline std::string to_string(const bool& value) {
   std::stringstream ss;
   ss << std::boolalpha << value;
@@ -61,7 +65,7 @@ inline std::string to_string(const bool& value) {
 
 }  // namespace printer
 
-std::ostream& error() {
+inline std::ostream& error() {
   return std::cerr << "\x1b[31;1m[painless error]\x1b[0m ";
 }
 
@@ -79,7 +83,24 @@ class Parameter {
         m_default_value(default_value),
         m_current_value(default_value),
         m_file_watcher{} {
-    mkdir(BASE_PATH, 0777);
+    m_base_path = get_base_path();
+
+    if (mkdir(m_base_path.c_str(), 0777) != 0) {
+      if (errno == EEXIST) {
+        struct stat sb;
+        if (lstat(m_base_path.c_str(), &sb) != 0) {
+          throw std::runtime_error{"cannot stat() " + m_base_path +
+                                   std::strerror(errno)};
+        }
+        if ((sb.st_mode & S_IFMT) != S_IFDIR) {
+          throw std::runtime_error{"mkdir " + m_base_path +
+                                   " failed: " + std::strerror(errno)};
+        }
+      } else {
+        throw std::runtime_error{"mkdir " + m_base_path +
+                                 " failed: " + std::strerror(errno)};
+      }
+    }
 
     bool file_creation_successful = false;
     const auto filename = getFilename();
@@ -141,9 +162,7 @@ class Parameter {
 
  private:
   std::string getFilename() const {
-    std::string filename = BASE_PATH;
-    filename += m_parameter_name;
-    return filename;
+    return m_base_path + m_parameter_name;
   }
 
   void fileWatcher() {
@@ -221,6 +240,8 @@ class Parameter {
 
     return m_default_value;
   }
+
+  std::string m_base_path;
 
   const char* m_parameter_name;
   const T m_default_value;

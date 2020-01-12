@@ -46,7 +46,7 @@ template <typename T>
 void writeToParameterFile(const painless::Parameter<T>& parameter,
                           const std::string& content) {
   {
-    std::string path = painless::BASE_PATH;
+    std::string path = painless::get_base_path();
     path += parameter.name();
     std::ofstream f(path);
     f << content << "\n";
