@@ -44,9 +44,21 @@ void waitForValue(const painless::Parameter<T>& parameter, T expected_value) {
 }
 
 TEST_CASE("Reads updated parameter from file") {
-  PAINLESS_PARAMETER(update_float, 3.14f);
+  PAINLESS_PARAMETER(update_float, 0.f);
   writeToParameterFile(update_float, "1.23f");
   waitForValue(update_float, 1.23f);
+
+  PAINLESS_PARAMETER(update_int, 0);
+  writeToParameterFile(update_int, "42");
+  waitForValue(update_int, 42);
+
+  PAINLESS_PARAMETER(update_bool, false);
+  writeToParameterFile(update_bool, "1");
+  waitForValue(update_bool, true);
+
+  PAINLESS_PARAMETER(update_char, 'a');
+  writeToParameterFile(update_char, "b");
+  waitForValue(update_char, 'b');
 }
 
 TEST_CASE("Can re-use parameter name") {
