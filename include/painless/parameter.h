@@ -91,17 +91,17 @@ class Parameter {
     return m_current_value;
   }
 
-  T operator*() const {
-    return value();
-  }
+  T operator*() const { return value(); }
 
-  operator T() const {
-    return value();
-  }
+  operator T() const { return value(); }
 
   ~Parameter() {
-    remove(getFilename().c_str());  // TODO: error handling
-    m_file_watcher.join();
+    if (unlink(getFilename().c_str()) == 0) {
+      // Success
+      m_file_watcher.join();
+    } else {
+      m_file_watcher.detach();
+    }
   }
 
   const char* name() const { return m_parameter_name; }
