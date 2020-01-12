@@ -12,6 +12,7 @@
 #include <condition_variable>
 #include <fstream>
 #include <ios>
+#include <iostream>
 #include <mutex>
 #include <sstream>
 #include <thread>
@@ -60,6 +61,16 @@ inline std::string to_string(const bool& value) {
 
 }  // namespace printer
 
+std::ostream& error() {
+  return std::cerr << "\x1b[31;1m[painless error]\x1b[0m ";
+}
+
+enum class WatcherState {
+  NotInitialized,
+  Watching,
+  Error,
+};
+
 template <typename T>
 class Parameter {
  public:
@@ -68,22 +79,41 @@ class Parameter {
         m_default_value(default_value),
         m_current_value(default_value),
         m_file_watcher{} {
-    mkdir(BASE_PATH, 0777);  // TODO: error handling
+    mkdir(BASE_PATH, 0777);
 
+    bool file_creation_successful = false;
     const auto filename = getFilename();
     {
       std::ofstream parameter_file{filename};
-      parameter_file << printer::to_string(m_default_value) << "\n";
-      parameter_file << "# Parameter '" << m_parameter_name << "'\n";
-      parameter_file << "# Default value: '" << m_default_value << "'\n";
+      if (!parameter_file.good()) {
+        error() << "Could not create file '" << filename << "'." << std::endl;
+      } else {
+        parameter_file << printer::to_string(m_default_value) << "\n";
+        parameter_file << "# Parameter '" << m_parameter_name << "'\n";
+        parameter_file << "# Default value: '" << m_default_value << "'\n";
+        file_creation_successful = true;
+      }
     }
 
-    m_file_watcher = std::thread{&Parameter::fileWatcher, this};
+    if (file_creation_successful) {
+      m_file_watcher = std::thread{&Parameter::fileWatcher, this};
 
-    // Wait for watcher thread to be initialized
-    std::unique_lock<std::mutex> lock(m_watcher_initialized_mutex);
-    m_watcher_initialized_cv.wait(lock,
-                                  [this] { return m_watcher_initialized; });
+      // Wait for watcher thread to be initialized
+      {
+        std::unique_lock<std::mutex> lock(m_watcher_state_mutex);
+        m_watcher_state_cv.wait(lock, [this] {
+          return m_watcher_state != WatcherState::NotInitialized;
+        });
+      }
+
+      {
+        std::lock_guard<std::mutex> lock(m_watcher_state_mutex);
+        if (m_watcher_state == WatcherState::Error) {
+          error() << "Could not set up watcher for file '" << getFilename()
+                  << std::endl;
+        }
+      }
+    }
   }
 
   T value() const {
@@ -101,7 +131,9 @@ class Parameter {
       m_file_watcher.join();
     } else {
       // Failed to remove file, detach the watcher thread
-      m_file_watcher.detach();
+      if (m_file_watcher.joinable()) {
+        m_file_watcher.detach();
+      }
     }
   }
 
@@ -123,7 +155,7 @@ class Parameter {
     const int fd = inotify_init();
 
     if (fd < 0) {
-      perror("inotify_init");  // TODO
+      error() << "Could not initialize inotify." << std::endl;
     }
 
     const int wd = inotify_add_watch(fd, getFilename().c_str(),
@@ -131,10 +163,18 @@ class Parameter {
 
     // Signal to main thread that the watch has been set up.
     {
-      const std::lock_guard<std::mutex> lock(m_watcher_initialized_mutex);
-      m_watcher_initialized = true;
+      const std::lock_guard<std::mutex> lock(m_watcher_state_mutex);
+      if (wd < 0) {
+        m_watcher_state = WatcherState::Error;
+      } else {
+        m_watcher_state = WatcherState::Watching;
+      }
     }
-    m_watcher_initialized_cv.notify_one();
+    m_watcher_state_cv.notify_one();
+
+    if (wd < 0) {
+      return;
+    }
 
     int length;
     bool running = true;
@@ -188,9 +228,9 @@ class Parameter {
   mutable std::mutex m_current_value_mutex;
   T m_current_value;
 
-  std::mutex m_watcher_initialized_mutex;
-  std::condition_variable m_watcher_initialized_cv;
-  bool m_watcher_initialized = false;
+  std::mutex m_watcher_state_mutex;
+  std::condition_variable m_watcher_state_cv;
+  WatcherState m_watcher_state = WatcherState::NotInitialized;
 
   std::thread m_file_watcher;
 };
