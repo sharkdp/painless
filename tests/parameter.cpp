@@ -16,8 +16,12 @@ TEST_CASE("Reproduces default value") {
   CHECK(*default_value_char == 'z');
 }
 
-void writeToFileAndSleep(const char* path, const std::string& content) {
+template <typename T>
+void writeToParameterFile(const painless::Parameter<T>& parameter,
+                          const std::string& content) {
   {
+    std::string path = painless::BASE_PATH;
+    path += parameter.name();
     std::ofstream f(path);
     f << content << "\n";
   }
@@ -41,8 +45,7 @@ void waitForValue(const painless::Parameter<T>& parameter, T expected_value) {
 
 TEST_CASE("Reads updated parameter from file") {
   PAINLESS_PARAMETER(update_float, 3.14f);
-  CHECK(*update_float == 3.14f);
-  writeToFileAndSleep("/tmp/painless/update_float", "1.23f");
+  writeToParameterFile(update_float, "1.23f");
   waitForValue(update_float, 1.23f);
 }
 
@@ -50,13 +53,13 @@ TEST_CASE("Can re-use parameter name") {
   {
     PAINLESS_PARAMETER(reuse_float, 1.1f);
     CHECK(*reuse_float == 1.1f);
-    writeToFileAndSleep("/tmp/painless/reuse_float", "2.2f");
+    writeToParameterFile(reuse_float, "2.2f");
     waitForValue(reuse_float, 2.2f);
   }
   {
     PAINLESS_PARAMETER(reuse_float, 3.3f);
     CHECK(*reuse_float == 3.3f);
-    writeToFileAndSleep("/tmp/painless/reuse_float", "4.4f");
+    writeToParameterFile(reuse_float, "4.4f");
     waitForValue(reuse_float, 4.4f);
   }
 }
