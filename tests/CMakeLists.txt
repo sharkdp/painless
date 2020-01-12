@@ -4,11 +4,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Catch2/contrib)
 include(CTest)
 include(Catch)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(WARNING_FLAGS "-W4")
-else()
-    set(WARNING_FLAGS "-Wall" "-pedantic")
-endif()
+set(WARNING_FLAGS "-Wall" "-pedantic")
 
 add_executable(${PROJECT_NAME}-tests main.cpp parameter.cpp)
 target_compile_options(${PROJECT_NAME}-tests PRIVATE ${WARNING_FLAGS})
