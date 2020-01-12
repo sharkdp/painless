@@ -56,7 +56,7 @@ void writeToParameterFile(const painless::Parameter<T>& parameter,
 template <typename T, typename T2>
 void waitForValue(const painless::Parameter<T>& parameter, T2 expected_value) {
   const size_t max_waiting_iterations = 100;  // each iteration is 100 us
-  for (int i = 0; i < max_waiting_iterations; ++i) {
+  for (size_t i = 0; i < max_waiting_iterations; ++i) {
     if (*parameter == expected_value) {
       SUCCEED();
       return;
