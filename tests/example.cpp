@@ -9,6 +9,7 @@ int main() {
   PAINLESS_PARAMETER(message, "X");
 
   while (true) {
+    // Print the 'message', 'count' times
     for (int i = 0; i < count; ++i) {
       std::cout << message;
     }
