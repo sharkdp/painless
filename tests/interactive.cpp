@@ -4,7 +4,7 @@
 
 template <typename T>
 void showParameter(const painless::Parameter<T>& parameter) {
-  std::cout << parameter.name() << " = " << *parameter << "\n";
+  std::cout << parameter.name() << " = " << painless::printer::to_string(*parameter) << "\n";
 }
 
 int main() {
