@@ -22,6 +22,26 @@ TEST_CASE("Reproduces default value") {
   CHECK(default_value_int8_t == 4);
 }
 
+TEST_CASE("can be used with comparison operators") {
+  PAINLESS_PARAMETER(value, 1.5f);
+
+  CHECK(value == 1.5f);
+  CHECK(value != 0.0f);
+  CHECK(value > 1.0f);
+  CHECK(value >= 1.0f);
+  CHECK(value < 2.0f);
+  CHECK(value <= 2.0f);
+}
+
+TEST_CASE("can be used in expressions") {
+  PAINLESS_PARAMETER(value, 7);
+
+  CHECK(value + 3 == 10);
+  CHECK(3 + value == 10);
+  CHECK(value * 3 == 21);
+  CHECK(3 * value == 21);
+}
+
 template <typename T>
 void writeToParameterFile(const painless::Parameter<T>& parameter,
                           const std::string& content) {
