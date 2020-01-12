@@ -1,3 +1,4 @@
+#include <dbg.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,9 +90,8 @@ class Parameter {
   }
 
   ~Parameter() {
-    m_file_watcher.detach();  // TODO
-
     remove(getFilename().c_str());  // TODO: error handling
+    m_file_watcher.join();
   }
 
   const char* name() const { return m_parameter_name; }
@@ -112,10 +112,11 @@ class Parameter {
     const int fd = inotify_init();
 
     if (fd < 0) {
-      perror("inotify_init");
+      perror("inotify_init");  // TODO
     }
 
-    const int wd = inotify_add_watch(fd, BASE_PATH, IN_MODIFY);
+    const int wd = inotify_add_watch(fd, getFilename().c_str(),
+                                     IN_DELETE_SELF | IN_MODIFY);
 
     // Signal to main thread that the watch has been set up.
     {
@@ -125,7 +126,8 @@ class Parameter {
     m_watcher_initialized_cv.notify_one();
 
     int length;
-    while (true) {
+    bool running = true;
+    while (running) {
       length = read(fd, buffer.data(), BUFFER_LENGTH);
 
       if (length < 0) {
@@ -136,12 +138,15 @@ class Parameter {
       while (i < length) {
         const inotify_event* event =
             reinterpret_cast<inotify_event*>(&buffer[i]);
-        if (event->len > 0 && event->mask & IN_MODIFY) {
+
+        if (event->mask & IN_MODIFY) {
           const T value = readCurrentValue();
           {
             const std::lock_guard<std::mutex> lock(m_current_value_mutex);
             m_current_value = value;
           }
+        } else if (event->mask & IN_DELETE_SELF) {
+          running = false;
         }
         i += EVENT_SIZE + event->len;
       }
@@ -167,7 +172,7 @@ class Parameter {
   }
 
   const char* m_parameter_name;
-  T m_default_value;
+  const T m_default_value;
 
   mutable std::mutex m_current_value_mutex;
   T m_current_value;
