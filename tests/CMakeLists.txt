@@ -9,8 +9,11 @@ set(WARNING_FLAGS "-Wall" "-pedantic")
 add_executable(${PROJECT_NAME}-tests main.cpp parameter.cpp)
 target_compile_options(${PROJECT_NAME}-tests PRIVATE ${WARNING_FLAGS})
 target_link_libraries(${PROJECT_NAME}-tests ${PROJECT_NAME} Catch2::Catch2 pthread)
-
 catch_discover_tests(${PROJECT_NAME}-tests)
+
+add_executable(${PROJECT_NAME}-example example.cpp)
+target_compile_options(${PROJECT_NAME}-example PRIVATE ${WARNING_FLAGS})
+target_link_libraries(${PROJECT_NAME}-example ${PROJECT_NAME} pthread)
 
 add_executable(${PROJECT_NAME}-interactive interactive.cpp)
 target_compile_options(${PROJECT_NAME}-interactive PRIVATE ${WARNING_FLAGS})
