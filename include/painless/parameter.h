@@ -100,6 +100,7 @@ class Parameter {
       // Success
       m_file_watcher.join();
     } else {
+      // Failed to remove file, detach the watcher thread
       m_file_watcher.detach();
     }
   }
