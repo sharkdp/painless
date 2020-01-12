@@ -1,10 +1,12 @@
-#include <iostream>
-#include <iomanip>
 #include <painless/parameter.h>
+
+#include <iomanip>
+#include <iostream>
 
 template <typename T>
 void showParameter(const painless::Parameter<T>& parameter) {
-  std::cout << parameter.name() << " = " << painless::printer::to_string(*parameter) << "\n";
+  std::cout << parameter.name() << " = "
+            << painless::printer::to_string(*parameter) << "\n";
 }
 
 int main() {
@@ -17,7 +19,8 @@ int main() {
   while (true) {
     usleep(100000);
 
-    std::cout << "================ " << std::setw(6) << iteration << " ================\n";
+    std::cout << "================ " << std::setw(6) << iteration
+              << " ================\n";
     showParameter(demo_float);
     showParameter(demo_int);
     showParameter(demo_bool);
