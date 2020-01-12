@@ -17,6 +17,9 @@ TEST_CASE("Reproduces default value") {
 
   PAINLESS_PARAMETER(default_value_string, "hello world");
   CHECK(*default_value_string == "hello world");
+
+  PAINLESS_PARAMETER(default_value_int8_t, int8_t{4});
+  CHECK(*default_value_int8_t == 4);
 }
 
 template <typename T>
@@ -30,8 +33,8 @@ void writeToParameterFile(const painless::Parameter<T>& parameter,
   }
 }
 
-template <typename T>
-void waitForValue(const painless::Parameter<T>& parameter, T expected_value) {
+template <typename T, typename T2>
+void waitForValue(const painless::Parameter<T>& parameter, T2 expected_value) {
   const size_t max_waiting_iterations = 100;  // each iteration is 100 us
   for (int i = 0; i < max_waiting_iterations; ++i) {
     if (*parameter == expected_value) {
@@ -65,7 +68,11 @@ TEST_CASE("Reads updated parameter from file") {
 
   PAINLESS_PARAMETER(update_string, "foo bar");
   writeToParameterFile(update_string, "foo bar baz");
-  waitForValue(update_string, std::string("foo bar baz"));
+  waitForValue(update_string, "foo bar baz");
+
+  PAINLESS_PARAMETER(update_int8_t, 1);
+  writeToParameterFile(update_int8_t, "2");
+  waitForValue(update_int8_t, 2);
 }
 
 TEST_CASE("Can re-use parameter name") {
