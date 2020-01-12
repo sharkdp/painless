@@ -48,6 +48,8 @@ class Parameter {
 
   ~Parameter() {
     m_file_watcher.detach();  // TODO
+
+    remove(getFilename().c_str()); // TODO: error handling
   }
 
   const char* name() const {
