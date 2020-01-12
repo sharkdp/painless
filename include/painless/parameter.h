@@ -10,10 +10,27 @@
 #include <fstream>
 #include <mutex>
 #include <thread>
+#include <sstream>
 
 namespace painless {
 
 static constexpr const char* BASE_PATH = "/tmp/painless/";
+
+namespace parser {
+
+template <typename T>
+bool from_string(const std::string& input, T& value) {
+  std::istringstream ss(input);
+  return static_cast<bool>(ss >> value);
+}
+
+template <>
+bool from_string(const std::string& input, std::string& value) {
+  value = input;
+  return true;
+}
+
+}
 
 template <typename T>
 class Parameter {
@@ -113,10 +130,13 @@ class Parameter {
   }
 
   T readCurrentValue() {
-    std::ifstream param_file(getFilename());
-    if (param_file.is_open()) {
+    std::ifstream parameter_file(getFilename());
+    if (parameter_file.is_open()) {
+      std::string line;
+      std::getline(parameter_file, line);
+
       T current_value;
-      if (param_file >> current_value) {
+      if (parser::from_string(line, current_value)) {
         return current_value;
       }
     }

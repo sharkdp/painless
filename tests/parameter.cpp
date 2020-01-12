@@ -14,6 +14,9 @@ TEST_CASE("Reproduces default value") {
 
   PAINLESS_PARAMETER(default_value_char, 'z');
   CHECK(*default_value_char == 'z');
+
+  PAINLESS_PARAMETER(default_value_string, std::string("hello world"));
+  CHECK(*default_value_string == "hello world");
 }
 
 template <typename T>
@@ -59,6 +62,10 @@ TEST_CASE("Reads updated parameter from file") {
   PAINLESS_PARAMETER(update_char, 'a');
   writeToParameterFile(update_char, "b");
   waitForValue(update_char, 'b');
+
+  PAINLESS_PARAMETER(update_string, std::string("foo bar"));
+  writeToParameterFile(update_string, "foo bar baz");
+  waitForValue(update_string, std::string("foo bar baz"));
 }
 
 TEST_CASE("Can re-use parameter name") {
