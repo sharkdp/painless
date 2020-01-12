@@ -23,19 +23,19 @@ static constexpr const char* BASE_PATH = "/tmp/painless/";
 namespace parser {
 
 template <typename T>
-bool from_string(const std::string& input, T& value) {
+inline bool from_string(const std::string& input, T& value) {
   std::istringstream ss(input);
   return static_cast<bool>(ss >> value);
 }
 
 template <>
-bool from_string(const std::string& input, bool& value) {
+inline bool from_string(const std::string& input, bool& value) {
   std::istringstream ss(input);
   return static_cast<bool>(ss >> std::boolalpha >> value);
 }
 
 template <>
-bool from_string(const std::string& input, std::string& value) {
+inline bool from_string(const std::string& input, std::string& value) {
   value = input;
   return true;
 }
@@ -45,14 +45,14 @@ bool from_string(const std::string& input, std::string& value) {
 namespace printer {
 
 template <typename T>
-std::string to_string(const T& value) {
+inline std::string to_string(const T& value) {
   std::stringstream ss;
   ss << value;
   return ss.str();
 }
 
 template <>
-std::string to_string(const bool& value) {
+inline std::string to_string(const bool& value) {
   std::stringstream ss;
   ss << std::boolalpha << value;
   return ss.str();
