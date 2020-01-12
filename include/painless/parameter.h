@@ -86,9 +86,17 @@ class Parameter {
                                   [this] { return m_watcher_initialized; });
   }
 
-  T operator*() const {
+  T value() const {
     const std::lock_guard<std::mutex> lock(m_current_value_mutex);
     return m_current_value;
+  }
+
+  T operator*() const {
+    return value();
+  }
+
+  operator T() const {
+    return value();
   }
 
   ~Parameter() {
@@ -206,6 +214,12 @@ using value_type_to_parameter_type_t =
     typename detail::value_type_to_parameter_type<T>::type;
 
 }  // namespace painless
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const painless::Parameter<T>& v) {
+  out << *v;
+  return out;
+}
 
 #define PAINLESS_PARAMETER(name, default_value)                          \
   static painless::Parameter<                                            \

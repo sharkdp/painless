@@ -5,12 +5,12 @@
 #include <thread>
 
 int main() {
-  PAINLESS_PARAMETER(count, 3);
-  PAINLESS_PARAMETER(message, "hello");
+  PAINLESS_PARAMETER(count, 10);
+  PAINLESS_PARAMETER(message, "X");
 
   while (true) {
-    for (int i = 0; i < *count; ++i) {
-      std::cout << *message;
+    for (int i = 0; i < count; ++i) {
+      std::cout << message;
     }
     std::cout << "\n";
 

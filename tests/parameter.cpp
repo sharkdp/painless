@@ -4,22 +4,22 @@
 
 TEST_CASE("Reproduces default value") {
   PAINLESS_PARAMETER(default_value_float, 3.14f);
-  CHECK(*default_value_float == 3.14f);
+  CHECK(default_value_float == 3.14f);
 
   PAINLESS_PARAMETER(default_value_int, 42);
-  CHECK(*default_value_int == 42);
+  CHECK(default_value_int == 42);
 
   PAINLESS_PARAMETER(default_value_bool, true);
-  CHECK(*default_value_bool == true);
+  CHECK(default_value_bool == true);
 
   PAINLESS_PARAMETER(default_value_char, 'z');
-  CHECK(*default_value_char == 'z');
+  CHECK(default_value_char == 'z');
 
   PAINLESS_PARAMETER(default_value_string, "hello world");
   CHECK(*default_value_string == "hello world");
 
   PAINLESS_PARAMETER(default_value_int8_t, int8_t{4});
-  CHECK(*default_value_int8_t == 4);
+  CHECK(default_value_int8_t == 4);
 }
 
 template <typename T>
@@ -46,7 +46,7 @@ void waitForValue(const painless::Parameter<T>& parameter, T2 expected_value) {
 
   FAIL("Exceeded maximum waiting time for parameter '"
        << parameter.name() << "'. expected_value = " << expected_value
-       << "    *parameter = " << *parameter);
+       << "    parameter = " << parameter);
 }
 
 TEST_CASE("Reads updated parameter from file") {
@@ -110,13 +110,13 @@ TEST_CASE("Yields default value on parse error") {
 TEST_CASE("Can re-use parameter name") {
   {
     PAINLESS_PARAMETER(reuse_float, 1.1f);
-    CHECK(*reuse_float == 1.1f);
+    CHECK(reuse_float == 1.1f);
     writeToParameterFile(reuse_float, "2.2f");
     waitForValue(reuse_float, 2.2f);
   }
   {
     PAINLESS_PARAMETER(reuse_float, 3.3f);
-    CHECK(*reuse_float == 3.3f);
+    CHECK(reuse_float == 3.3f);
     writeToParameterFile(reuse_float, "4.4f");
     waitForValue(reuse_float, 4.4f);
   }
