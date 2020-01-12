@@ -11,6 +11,7 @@
 #include <mutex>
 #include <thread>
 #include <sstream>
+#include <ios>
 
 namespace painless {
 
@@ -25,9 +26,33 @@ bool from_string(const std::string& input, T& value) {
 }
 
 template <>
+bool from_string(const std::string& input, bool& value) {
+  std::istringstream ss(input);
+  return static_cast<bool>(ss >> std::boolalpha >> value);
+}
+
+template <>
 bool from_string(const std::string& input, std::string& value) {
   value = input;
   return true;
+}
+
+}
+
+namespace printer {
+
+template <typename T>
+std::string to_string(const T& value) {
+  std::stringstream ss;
+  ss << value;
+  return ss.str();
+}
+
+template <>
+std::string to_string(const bool& value) {
+  std::stringstream ss;
+  ss << std::boolalpha << value;
+  return ss.str();
 }
 
 }
@@ -45,7 +70,7 @@ class Parameter {
     const auto filename = getFilename();
     {
       std::ofstream parameter_file{filename};
-      parameter_file << m_default_value << "\n";
+      parameter_file << printer::to_string(m_default_value) << "\n";
       parameter_file << "# Parameter '" << m_parameter_name << "'\n";
       parameter_file << "# Default value: '" << m_default_value << "'\n";
     }

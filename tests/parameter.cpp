@@ -56,7 +56,7 @@ TEST_CASE("Reads updated parameter from file") {
   waitForValue(update_int, 42);
 
   PAINLESS_PARAMETER(update_bool, false);
-  writeToParameterFile(update_bool, "1");
+  writeToParameterFile(update_bool, "true");
   waitForValue(update_bool, true);
 
   PAINLESS_PARAMETER(update_char, 'a');
