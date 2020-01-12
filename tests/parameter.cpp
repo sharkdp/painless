@@ -75,6 +75,20 @@ TEST_CASE("Reads updated parameter from file") {
   waitForValue(update_int8_t, 2);
 }
 
+TEST_CASE("Can handle multiple value updates") {
+  PAINLESS_PARAMETER(multiple_value_int, 0);
+
+  for (int i = 1; i <= 10; ++i) {
+    writeToParameterFile(multiple_value_int, std::to_string(i));
+    waitForValue(multiple_value_int, i);
+  }
+
+  for (int i = 11; i <= 20; ++i) {
+    writeToParameterFile(multiple_value_int, std::to_string(i));
+  }
+  waitForValue(multiple_value_int, 20);
+}
+
 TEST_CASE("Can re-use parameter name") {
   {
     PAINLESS_PARAMETER(reuse_float, 1.1f);
