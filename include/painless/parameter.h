@@ -125,30 +125,27 @@ class Parameter {
     m_watcher_initialized_cv.notify_one();
 
     int length;
-    do {
+    while (true) {
       length = read(fd, buffer.data(), BUFFER_LENGTH);
 
       if (length < 0) {
-        perror("read");
+        break;
       }
 
       int i = 0;
       while (i < length) {
         const inotify_event* event =
             reinterpret_cast<inotify_event*>(&buffer[i]);
-        if (event->len) {
-          if (event->mask & IN_MODIFY) {
-            const T value = readCurrentValue();
-            {
-              const std::lock_guard<std::mutex> lock(m_current_value_mutex);
-              m_current_value = value;
-            }
+        if (event->len > 0 && event->mask & IN_MODIFY) {
+          const T value = readCurrentValue();
+          {
+            const std::lock_guard<std::mutex> lock(m_current_value_mutex);
+            m_current_value = value;
           }
         }
         i += EVENT_SIZE + event->len;
       }
-
-    } while (length > 0);
+    }
 
     inotify_rm_watch(fd, wd);
     close(fd);
