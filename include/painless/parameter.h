@@ -1,16 +1,19 @@
-#include <dbg.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/inotify.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <condition_variable>
 #include <fstream>
 #include <mutex>
 #include <thread>
 
 namespace painless {
+
+static constexpr const char* BASE_PATH = "/tmp/painless/";
 
 template <typename T>
 class Parameter {
@@ -18,16 +21,22 @@ class Parameter {
   Parameter(const char* name, T default_value)
       : m_parameter_name(name),
         m_default_value(default_value),
-        m_current_value(readCurrentValue()),
-        m_file_watcher{&Parameter::fileWatcher, this} {
-    const auto filename = getFilename();
-    std::ifstream f(filename.c_str());
-    const bool file_exists = f.good();
+        m_current_value(default_value),
+        m_file_watcher{} {
+    mkdir(BASE_PATH, 0777);  // TODO: error handling
 
-    if (!file_exists) {
-      std::ofstream param_file(filename);
-      param_file << m_default_value << "\n";
+    const auto filename = getFilename();
+    {
+      std::ofstream parameter_file{filename};
+      parameter_file << m_default_value << "\n";
     }
+
+    m_file_watcher = std::thread{&Parameter::fileWatcher, this};
+
+    // Wait for watcher thread to be initialized
+    std::unique_lock<std::mutex> lock(m_watcher_initialized_mutex);
+    m_watcher_initialized_cv.wait(lock,
+                                  [this] { return m_watcher_initialized; });
   }
 
   T operator*() const {
@@ -41,7 +50,7 @@ class Parameter {
 
  private:
   std::string getFilename() const {
-    std::string filename = "/tmp/painless/";
+    std::string filename = BASE_PATH;
     filename += m_parameter_name;
     return filename;
   }
@@ -58,7 +67,13 @@ class Parameter {
       perror("inotify_init");
     }
 
-    int wd = inotify_add_watch(fd, "/tmp/painless", IN_MODIFY);
+    int wd = inotify_add_watch(fd, BASE_PATH, IN_MODIFY);
+
+    {
+        const std::lock_guard<std::mutex> lock(m_watcher_initialized_mutex);
+        m_watcher_initialized = true;
+    }
+    m_watcher_initialized_cv.notify_one();
 
     int length;
     do {
@@ -74,8 +89,6 @@ class Parameter {
         if (event->len) {
           if (event->mask & IN_MODIFY) {
             const T value = readCurrentValue();
-            dbg("updating value");
-            dbg(m_parameter_name);
             {
               const std::lock_guard<std::mutex> lock(m_current_value_mutex);
               m_current_value = value;
@@ -108,6 +121,10 @@ class Parameter {
 
   mutable std::mutex m_current_value_mutex;
   T m_current_value;
+
+  std::mutex m_watcher_initialized_mutex;
+  std::condition_variable m_watcher_initialized_cv;
+  bool m_watcher_initialized = false;
 
   std::thread m_file_watcher;
 };
