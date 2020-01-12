@@ -3,18 +3,21 @@
 `painless` is a header-only C++ library that provides an easy way to use interactive parameters in
 your program.
 
-New parameters are defined with a macro call that takes an identifier (and name) for the parameter as well as a default value:
+New parameters are defined with a macro call that takes an **identifier** (and name) for the parameter as well as
+a **default value**:
 ```c++
 PAINLESS_PARAMETER(my_parameter, 3.14f);
 ```
-The variable `my_parameter` can then be used as if it was a normal `float` value. At runtime,
-`painless` creates a file called `/tmp/painless/my_parameter` with the following content:
+The variable `my_parameter` can then be used as if it was a normal `float` value.
+
+At runtime, `painless` creates a file called `/tmp/painless/my_parameter` with the following content:
 ``` python
 3.14
 # Parameter 'my_parameter'
 # Default value: '3.14'
 ```
-At the same time, it also spawns a thread that watches for modifications of that file. Changes to the value in the first line will immediately be reflected in the running program.
+At the same time, it also spawns a thread that watches for modifications of that file.
+Changes to the value in the first line will immediately be reflected in the running program.
 
 ## Example program
 
@@ -40,3 +43,8 @@ int main() {
   }
 }
 ```
+
+## Goals
+
+`painless` is mainly intended for early exploratory development phases and does not aim to be a
+feature-complete parameter handling solution.
