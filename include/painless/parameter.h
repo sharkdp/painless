@@ -29,6 +29,8 @@ class Parameter {
     {
       std::ofstream parameter_file{filename};
       parameter_file << m_default_value << "\n";
+      parameter_file << "# Parameter '" << m_parameter_name << "'\n";
+      parameter_file << "# Default value: '" << m_default_value << "'\n";
     }
 
     m_file_watcher = std::thread{&Parameter::fileWatcher, this};
