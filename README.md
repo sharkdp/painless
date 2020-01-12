@@ -1,5 +1,8 @@
 # painless
 
+[![Build Status](https://travis-ci.org/sharkdp/painless.svg?branch=master)](https://travis-ci.org/sharkdp/painless)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 `painless` is a header-only C++ library that provides an easy way to use interactive parameters in
 your program.
 
