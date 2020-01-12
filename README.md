@@ -43,6 +43,8 @@ int main() {
   }
 }
 ```
+While this program runs, the files `/tmp/painless/message` and `/tmp/painless/count` can be
+edited in order to interactively change the values of the `message` and `count` parameters.
 
 ## Goals
 
