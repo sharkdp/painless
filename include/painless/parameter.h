@@ -105,18 +105,19 @@ class Parameter {
 
   void fileWatcher() {
     static constexpr size_t EVENT_SIZE = sizeof(inotify_event);
-    static constexpr size_t BUF_LEN = 1024 * (EVENT_SIZE + 16);
+    static constexpr size_t BUFFER_LENGTH = 1024 * (EVENT_SIZE + 16);
 
-    char buffer[BUF_LEN];
+    std::array<char, BUFFER_LENGTH> buffer;
 
-    int fd = inotify_init();
+    const int fd = inotify_init();
 
     if (fd < 0) {
       perror("inotify_init");
     }
 
-    int wd = inotify_add_watch(fd, BASE_PATH, IN_MODIFY);
+    const int wd = inotify_add_watch(fd, BASE_PATH, IN_MODIFY);
 
+    // Signal to main thread that the watch has been set up.
     {
       const std::lock_guard<std::mutex> lock(m_watcher_initialized_mutex);
       m_watcher_initialized = true;
@@ -125,7 +126,7 @@ class Parameter {
 
     int length;
     do {
-      length = read(fd, buffer, BUF_LEN);
+      length = read(fd, buffer.data(), BUFFER_LENGTH);
 
       if (length < 0) {
         perror("read");
@@ -133,7 +134,8 @@ class Parameter {
 
       int i = 0;
       while (i < length) {
-        inotify_event* event = reinterpret_cast<inotify_event*>(&buffer[i]);
+        const inotify_event* event =
+            reinterpret_cast<inotify_event*>(&buffer[i]);
         if (event->len) {
           if (event->mask & IN_MODIFY) {
             const T value = readCurrentValue();
