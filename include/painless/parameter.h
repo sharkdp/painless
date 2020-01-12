@@ -1,3 +1,6 @@
+#ifndef PAINLESS_PARAMETER_H
+#define PAINLESS_PARAMETER_H
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -208,3 +211,5 @@ using value_type_to_parameter_type_t =
   static painless::Parameter<                                            \
       painless::value_type_to_parameter_type_t<decltype(default_value)>> \
       name{#name, default_value};
+
+#endif  // PAINLESS_PARAMETER_H
