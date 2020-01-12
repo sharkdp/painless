@@ -89,6 +89,24 @@ TEST_CASE("Can handle multiple value updates") {
   waitForValue(multiple_value_int, 20);
 }
 
+TEST_CASE("Yields default value on empty input") {
+  PAINLESS_PARAMETER(parsing_float, 1.1f);
+  writeToParameterFile(parsing_float, "2.2");
+  waitForValue(parsing_float, 2.2f);
+
+  writeToParameterFile(parsing_float, "");
+  waitForValue(parsing_float, 1.1f);
+}
+
+TEST_CASE("Yields default value on parse error") {
+  PAINLESS_PARAMETER(parsing_float, 1.1f);
+  writeToParameterFile(parsing_float, "2.2");
+  waitForValue(parsing_float, 2.2f);
+
+  writeToParameterFile(parsing_float, "dummy");
+  waitForValue(parsing_float, 1.1f);
+}
+
 TEST_CASE("Can re-use parameter name") {
   {
     PAINLESS_PARAMETER(reuse_float, 1.1f);
