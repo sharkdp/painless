@@ -8,10 +8,10 @@
 
 #include <condition_variable>
 #include <fstream>
-#include <mutex>
-#include <thread>
-#include <sstream>
 #include <ios>
+#include <mutex>
+#include <sstream>
+#include <thread>
 
 namespace painless {
 
@@ -37,7 +37,7 @@ bool from_string(const std::string& input, std::string& value) {
   return true;
 }
 
-}
+}  // namespace parser
 
 namespace printer {
 
@@ -55,7 +55,7 @@ std::string to_string(const bool& value) {
   return ss.str();
 }
 
-}
+}  // namespace printer
 
 template <typename T>
 class Parameter {
@@ -91,12 +91,10 @@ class Parameter {
   ~Parameter() {
     m_file_watcher.detach();  // TODO
 
-    remove(getFilename().c_str()); // TODO: error handling
+    remove(getFilename().c_str());  // TODO: error handling
   }
 
-  const char* name() const {
-    return m_parameter_name;
-  }
+  const char* name() const { return m_parameter_name; }
 
  private:
   std::string getFilename() const {
@@ -120,8 +118,8 @@ class Parameter {
     int wd = inotify_add_watch(fd, BASE_PATH, IN_MODIFY);
 
     {
-        const std::lock_guard<std::mutex> lock(m_watcher_initialized_mutex);
-        m_watcher_initialized = true;
+      const std::lock_guard<std::mutex> lock(m_watcher_initialized_mutex);
+      m_watcher_initialized = true;
     }
     m_watcher_initialized_cv.notify_one();
 
@@ -182,8 +180,28 @@ class Parameter {
   std::thread m_file_watcher;
 };
 
+namespace detail {
+
+template <typename T>
+struct value_type_to_parameter_type {
+  using type = T;
+};
+
+// Treat string literals as 'std::string' parameters
+template <size_t N>
+struct value_type_to_parameter_type<const char (&)[N]> {
+  using type = std::string;
+};
+
+}  // namespace detail
+
+template <typename T>
+using value_type_to_parameter_type_t =
+    typename detail::value_type_to_parameter_type<T>::type;
+
 }  // namespace painless
 
-#define PAINLESS_PARAMETER(name, default_value)                   \
-  static painless::Parameter<decltype(default_value)> name{#name, \
-                                                           default_value};
+#define PAINLESS_PARAMETER(name, default_value)                          \
+  static painless::Parameter<                                            \
+      painless::value_type_to_parameter_type_t<decltype(default_value)>> \
+      name{#name, default_value};

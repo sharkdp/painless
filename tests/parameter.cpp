@@ -15,7 +15,7 @@ TEST_CASE("Reproduces default value") {
   PAINLESS_PARAMETER(default_value_char, 'z');
   CHECK(*default_value_char == 'z');
 
-  PAINLESS_PARAMETER(default_value_string, std::string("hello world"));
+  PAINLESS_PARAMETER(default_value_string, "hello world");
   CHECK(*default_value_string == "hello world");
 }
 
@@ -63,7 +63,7 @@ TEST_CASE("Reads updated parameter from file") {
   writeToParameterFile(update_char, "b");
   waitForValue(update_char, 'b');
 
-  PAINLESS_PARAMETER(update_string, std::string("foo bar"));
+  PAINLESS_PARAMETER(update_string, "foo bar");
   writeToParameterFile(update_string, "foo bar baz");
   waitForValue(update_string, std::string("foo bar baz"));
 }

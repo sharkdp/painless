@@ -11,7 +11,7 @@ int main() {
   PAINLESS_PARAMETER(demo_float, 1.4f);
   PAINLESS_PARAMETER(demo_int, 42);
   PAINLESS_PARAMETER(demo_bool, false);
-  PAINLESS_PARAMETER(demo_string, std::string("hello world"));
+  PAINLESS_PARAMETER(demo_string, "hello world");
 
   int iteration = 0;
   while (true) {
