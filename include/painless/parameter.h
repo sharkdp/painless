@@ -48,6 +48,10 @@ class Parameter {
     m_file_watcher.detach();  // TODO
   }
 
+  const char* name() const {
+    return m_parameter_name;
+  }
+
  private:
   std::string getFilename() const {
     std::string filename = BASE_PATH;
