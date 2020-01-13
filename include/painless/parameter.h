@@ -20,6 +20,63 @@
 
 namespace painless {
 
+namespace detail {
+
+// Implementation of 'is_detected' to specialize for container-like types
+
+namespace detail_detector {
+
+struct nonesuch {
+  nonesuch() = delete;
+  ~nonesuch() = delete;
+  nonesuch(nonesuch const&) = delete;
+  void operator=(nonesuch const&) = delete;
+};
+
+template <typename...>
+using void_t = void;
+
+template <class Default,
+          class AlwaysVoid,
+          template <class...> class Op,
+          class... Args>
+struct detector {
+  using value_t = std::false_type;
+  using type = Default;
+};
+
+template <class Default, template <class...> class Op, class... Args>
+struct detector<Default, void_t<Op<Args...>>, Op, Args...> {
+  using value_t = std::true_type;
+  using type = Op<Args...>;
+};
+
+}  // namespace detail_detector
+
+template <template <class...> class Op, class... Args>
+using is_detected = typename detail_detector::
+    detector<detail_detector::nonesuch, void, Op, Args...>::value_t;
+
+// ostream detector
+
+template <typename T>
+using ostream_operator_t =
+    decltype(std::declval<std::ostream&>() << std::declval<T>());
+
+template <typename T>
+struct has_ostream_operator : is_detected<ostream_operator_t, T> {};
+
+// istream detector
+
+template <typename T>
+using istream_operator_t =
+    decltype(std::declval<std::istream&>() >> std::declval<T>());
+
+template <typename T>
+struct has_istream_operator : is_detected<istream_operator_t, T> {};
+
+}  // namespace detail
+
 inline std::string get_base_path() {
   const char* tmpdir = nullptr;
   if ((tmpdir = getenv("TMPDIR")) == nullptr) {
@@ -77,6 +134,10 @@ enum class WatcherState {
 
 template <typename T>
 class Parameter {
+  static_assert(detail::has_istream_operator<T&>::value,
+                "Type does not support the >> istream operator");
+  static_assert(detail::has_ostream_operator<const T&>::value,
+                "Type does not support the << ostream operator");
  public:
   Parameter(const char* name, T default_value)
       : m_parameter_name(name),
