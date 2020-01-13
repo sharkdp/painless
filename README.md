@@ -20,7 +20,7 @@ At runtime, `painless` then creates a file called `/tmp/painless/my_parameter` w
 # Default value: '3.14'
 ```
 In the background, it spawns a thread that watches for modifications to that file.
-Changes to the value will immediately be reflected in the running program.
+Changes to the value will be immediately reflected in the running program.
 
 ## Example
 
