@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cerrno>
 #include <condition_variable>
 #include <cstdio>
@@ -17,6 +18,7 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
+#include <vector>
 
 namespace painless {
 
@@ -132,6 +134,9 @@ enum class WatcherState {
   Error,
 };
 
+static std::vector<const char*> s_parameter_register;
+static std::mutex s_parameter_register_mutex;
+
 template <typename T>
 class Parameter {
   static_assert(detail::has_istream_operator<T&>::value,
@@ -163,21 +168,39 @@ class Parameter {
       }
     }
 
-    bool file_creation_successful = false;
+    bool parameter_file_exists = false;
     const auto filename = getFilename();
     {
-      std::ofstream parameter_file{filename};
-      if (!parameter_file.good()) {
-        error() << "Could not create file '" << filename << "'." << std::endl;
+      bool existing_parameter;
+      {
+        std::lock_guard<std::mutex> lock(s_parameter_register_mutex);
+
+        existing_parameter =
+            std::find(s_parameter_register.begin(), s_parameter_register.end(),
+                      name) != s_parameter_register.end();
+
+        if (!existing_parameter) {
+          s_parameter_register.push_back(name);
+        }
+      }
+
+      if (existing_parameter) {
+        parameter_file_exists = true;
+        m_current_value = readCurrentValue();
       } else {
-        parameter_file << printer::to_string(m_default_value) << "\n";
-        parameter_file << "# Parameter '" << m_parameter_name << "'\n";
-        parameter_file << "# Default value: '" << m_default_value << "'\n";
-        file_creation_successful = true;
+        std::ofstream parameter_file{filename};
+        if (!parameter_file.good()) {
+          error() << "Could not create file '" << filename << "'." << std::endl;
+        } else {
+          parameter_file << printer::to_string(m_default_value) << "\n";
+          parameter_file << "# Parameter '" << m_parameter_name << "'\n";
+          parameter_file << "# Default value: '" << m_default_value << "'\n";
+          parameter_file_exists = true;
+        }
       }
     }
 
-    if (file_creation_successful) {
+    if (parameter_file_exists) {
       m_file_watcher = std::thread{&Parameter::fileWatcher, this};
 
       // Wait for watcher thread to be initialized
@@ -215,6 +238,16 @@ class Parameter {
       // Failed to remove file, detach the watcher thread
       if (m_file_watcher.joinable()) {
         m_file_watcher.detach();
+      }
+    }
+
+    {
+      std::lock_guard<std::mutex> lock(s_parameter_register_mutex);
+      auto it = std::find(s_parameter_register.begin(),
+                          s_parameter_register.end(), name());
+
+      if (it != s_parameter_register.end()) {
+        s_parameter_register.erase(it);
       }
     }
   }

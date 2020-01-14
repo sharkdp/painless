@@ -23,23 +23,23 @@ TEST_CASE("Reproduces default value") {
 }
 
 TEST_CASE("can be used with comparison operators") {
-  PAINLESS_PARAMETER(value, 1.5f);
+  PAINLESS_PARAMETER(value1, 1.5f);
 
-  CHECK(value == 1.5f);
-  CHECK(value != 0.0f);
-  CHECK(value > 1.0f);
-  CHECK(value >= 1.0f);
-  CHECK(value < 2.0f);
-  CHECK(value <= 2.0f);
+  CHECK(value1 == 1.5f);
+  CHECK(value1 != 0.0f);
+  CHECK(value1 > 1.0f);
+  CHECK(value1 >= 1.0f);
+  CHECK(value1 < 2.0f);
+  CHECK(value1 <= 2.0f);
 }
 
 TEST_CASE("can be used in expressions") {
-  PAINLESS_PARAMETER(value, 7);
+  PAINLESS_PARAMETER(value2, 7);
 
-  CHECK(value + 3 == 10);
-  CHECK(3 + value == 10);
-  CHECK(value * 3 == 21);
-  CHECK(3 * value == 21);
+  CHECK(value2 + 3 == 10);
+  CHECK(3 + value2 == 10);
+  CHECK(value2 * 3 == 21);
+  CHECK(3 * value2 == 21);
 }
 
 template <typename T>
@@ -136,8 +136,26 @@ TEST_CASE("Can re-use parameter name") {
   }
   {
     PAINLESS_PARAMETER(reuse_float, 3.3f);
-    CHECK(reuse_float == 3.3f);
+    CHECK(reuse_float == 2.2f);  // The 'reuse_float' parameter is persistent,
+                                 // no new initialization is performed
     writeToParameterFile(reuse_float, "4.4f");
     waitForValue(reuse_float, 4.4f);
   }
+}
+
+int get_shared_parameter_value() {
+  PAINLESS_PARAMETER(shared_parameter, 3);
+  return shared_parameter;
+}
+
+TEST_CASE("Can share parameters across scopes") {
+  PAINLESS_PARAMETER(shared_parameter, 1);
+
+  CHECK(shared_parameter == 1);
+
+  writeToParameterFile(shared_parameter, "2");
+  waitForValue(shared_parameter, 2);
+
+  // Make sure that the initial file is not written again:
+  CHECK(get_shared_parameter_value() == 2);
 }
