@@ -1,6 +1,8 @@
 #include <painless/parameter.h>
 
 #include <catch2/catch.hpp>
+#include <future>
+#include <thread>
 
 TEST_CASE("Reproduces default value") {
   PAINLESS_PARAMETER(default_value_float, 3.14f);
@@ -175,4 +177,22 @@ TEST_CASE("Parameter file deletion") {
   }
 
   CHECK_FALSE(exists(filename.c_str()));
+}
+
+int value_in_other_thread() {
+  PAINLESS_PARAMETER(shared_across_threads, 0);
+  return shared_across_threads;
+}
+
+TEST_CASE("Support for multiple threads") {
+  PAINLESS_PARAMETER(shared_across_threads, 0);
+
+  auto future = std::async(value_in_other_thread);
+  CHECK(future.get() == 0);
+
+  writeToParameterFile(shared_across_threads, "1");
+  waitForValue(shared_across_threads, 1);
+
+  auto future2 = std::async(value_in_other_thread);
+  CHECK(future2.get() == 1);
 }
