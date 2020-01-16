@@ -179,20 +179,25 @@ TEST_CASE("Parameter file deletion") {
   CHECK_FALSE(exists(filename.c_str()));
 }
 
-int value_in_other_thread() {
+int get_value_in_other_thread() {
   PAINLESS_PARAMETER(shared_across_threads, 0);
   return shared_across_threads;
+}
+
+void wait_for_value_in_other_thread() {
+  PAINLESS_PARAMETER(shared_across_threads, 0);
+  waitForValue(shared_across_threads, 1);
 }
 
 TEST_CASE("Support for multiple threads") {
   PAINLESS_PARAMETER(shared_across_threads, 0);
 
-  auto future = std::async(value_in_other_thread);
+  auto future = std::async(get_value_in_other_thread);
   CHECK(future.get() == 0);
 
   writeToParameterFile(shared_across_threads, "1");
   waitForValue(shared_across_threads, 1);
 
-  auto future2 = std::async(value_in_other_thread);
-  CHECK(future2.get() == 1);
+  auto future2 = std::async(wait_for_value_in_other_thread);
+  future2.get();
 }
