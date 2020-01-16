@@ -46,9 +46,7 @@ template <typename T>
 void writeToParameterFile(const painless::Parameter<T>& parameter,
                           const std::string& content) {
   {
-    std::string path = painless::get_base_path();
-    path += parameter.name();
-    std::ofstream f(path);
+    std::ofstream f(parameter.filename());
     f << content << "\n";
   }
 }
@@ -158,4 +156,23 @@ TEST_CASE("Can share parameters across scopes") {
 
   // Make sure that the initial file is not written again:
   CHECK(get_shared_parameter_value() == 2);
+}
+
+bool exists(const char* path) {
+  std::ifstream f{path};
+  return f.good();
+}
+
+TEST_CASE("Parameter file deletion") {
+  std::string filename;
+  {
+    painless::Parameter<int> p{"manual_parameter", 42};
+    CHECK(p == 42);
+
+    filename = p.filename();
+
+    CHECK(exists(filename.c_str()));
+  }
+
+  CHECK_FALSE(exists(filename.c_str()));
 }

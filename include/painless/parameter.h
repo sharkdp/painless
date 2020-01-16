@@ -40,7 +40,8 @@ using void_t = void;
 
 template <class Default,
           class AlwaysVoid,
-          template <class...> class Op,
+          template <class...>
+          class Op,
           class... Args>
 struct detector {
   using value_t = std::false_type;
@@ -134,8 +135,46 @@ enum class WatcherState {
   Error,
 };
 
-static std::vector<const char*> s_parameter_register;
-static std::mutex s_parameter_register_mutex;
+class ParameterRegister {
+ public:
+  ParameterRegister(const ParameterRegister&) = delete;
+  ParameterRegister& operator=(const ParameterRegister&) = delete;
+
+  static ParameterRegister& Instance() {
+    static ParameterRegister s_register{};
+    return s_register;
+  }
+
+  bool add(const char* name) {
+    std::lock_guard<std::mutex> lock(m_register_mutex);
+
+    const bool existing_parameter =
+        std::find(m_parameters.begin(), m_parameters.end(), name) !=
+        m_parameters.end();
+
+    if (!existing_parameter) {
+      m_parameters.push_back(name);
+    }
+
+    return existing_parameter;
+  }
+
+  void remove(const char* name) {
+    std::lock_guard<std::mutex> lock(m_register_mutex);
+
+    auto it = std::find(m_parameters.begin(), m_parameters.end(), name);
+
+    if (it != m_parameters.end()) {
+      m_parameters.erase(it);
+    }
+  }
+
+ private:
+  ParameterRegister() = default;
+
+  std::vector<const char*> m_parameters;
+  std::mutex m_register_mutex;
+};
 
 template <typename T>
 class Parameter {
@@ -143,6 +182,7 @@ class Parameter {
                 "Type does not support the >> istream operator");
   static_assert(detail::has_ostream_operator<const T&>::value,
                 "Type does not support the << ostream operator");
+
  public:
   Parameter(const char* name, T default_value)
       : m_parameter_name(name),
@@ -169,28 +209,17 @@ class Parameter {
     }
 
     bool parameter_file_exists = false;
-    const auto filename = getFilename();
+    const auto file = filename();
     {
-      bool existing_parameter;
-      {
-        std::lock_guard<std::mutex> lock(s_parameter_register_mutex);
-
-        existing_parameter =
-            std::find(s_parameter_register.begin(), s_parameter_register.end(),
-                      name) != s_parameter_register.end();
-
-        if (!existing_parameter) {
-          s_parameter_register.push_back(name);
-        }
-      }
+      const bool existing_parameter = ParameterRegister::Instance().add(name);
 
       if (existing_parameter) {
         parameter_file_exists = true;
         m_current_value = readCurrentValue();
       } else {
-        std::ofstream parameter_file{filename};
+        std::ofstream parameter_file{file};
         if (!parameter_file.good()) {
-          error() << "Could not create file '" << filename << "'." << std::endl;
+          error() << "Could not create file '" << file << "'." << std::endl;
         } else {
           parameter_file << printer::to_string(m_default_value) << "\n";
           parameter_file << "# Parameter '" << m_parameter_name << "'\n";
@@ -214,7 +243,7 @@ class Parameter {
       {
         std::lock_guard<std::mutex> lock(m_watcher_state_mutex);
         if (m_watcher_state == WatcherState::Error) {
-          error() << "Could not set up watcher for file '" << getFilename()
+          error() << "Could not set up watcher for file '" << filename()
                   << std::endl;
         }
       }
@@ -231,7 +260,7 @@ class Parameter {
   operator T() const { return value(); }
 
   ~Parameter() {
-    if (unlink(getFilename().c_str()) == 0) {
+    if (unlink(filename().c_str()) == 0) {
       // Success
       m_file_watcher.join();
     } else {
@@ -241,22 +270,14 @@ class Parameter {
       }
     }
 
-    {
-      std::lock_guard<std::mutex> lock(s_parameter_register_mutex);
-      auto it = std::find(s_parameter_register.begin(),
-                          s_parameter_register.end(), name());
-
-      if (it != s_parameter_register.end()) {
-        s_parameter_register.erase(it);
-      }
-    }
+    ParameterRegister::Instance().remove(name());
   }
 
   const char* name() const { return m_parameter_name; }
 
- private:
-  std::string getFilename() const { return m_base_path + m_parameter_name; }
+  std::string filename() const { return m_base_path + m_parameter_name; }
 
+ private:
   void fileWatcher() {
     static constexpr size_t EVENT_SIZE = sizeof(inotify_event);
     static constexpr size_t BUFFER_LENGTH = 1024 * (EVENT_SIZE + 16);
@@ -269,8 +290,8 @@ class Parameter {
       error() << "Could not initialize inotify." << std::endl;
     }
 
-    const int wd = inotify_add_watch(fd, getFilename().c_str(),
-                                     IN_DELETE_SELF | IN_MODIFY);
+    const int wd =
+        inotify_add_watch(fd, filename().c_str(), IN_DELETE_SELF | IN_MODIFY);
 
     // Signal to main thread that the watch has been set up.
     {
@@ -319,7 +340,7 @@ class Parameter {
   }
 
   T readCurrentValue() {
-    std::ifstream parameter_file(getFilename());
+    std::ifstream parameter_file(filename());
     if (parameter_file.is_open()) {
       std::string line;
       std::getline(parameter_file, line);
