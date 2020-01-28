@@ -21,7 +21,7 @@ def parse_parameter_file(entry):
 
 def get_parameters():
     parameters = []
-    for entry in listdir(BASE_PATH):
+    for entry in sorted(listdir(BASE_PATH)):
         if isfile(path.join(BASE_PATH, entry)):
             parameters.append(parse_parameter_file(entry))
     return parameters
