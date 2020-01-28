@@ -1,0 +1,36 @@
+<!doctype html>
+<title>painless</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script type="text/javascript">
+function update_parameter(parameter) {
+  var request = new XMLHttpRequest();
+
+  var payload = {
+    name: parameter.dataset.name,
+    value: parameter.value
+  };
+
+  request.open("POST", "/update");
+  request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+  request.send(JSON.stringify(payload));
+}
+</script>
+<section class="content">
+  <h1>painless</h1>
+  {% if parameters|length %}
+    <table>
+    {% for parameter in parameters %}
+      <tr>
+        <td>
+          {{ parameter.name }}
+        </td>
+        <td>
+          <input data-name="{{parameter.name}}" value="{{parameter.value}}" onchange="update_parameter(this)" onkeyup="update_parameter(this)"
+          >
+        </td>
+      </tr>
+    {% endfor %}
+  {% else %}
+    No parameters found.
+  {% endif %}
+</section>
