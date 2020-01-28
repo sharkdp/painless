@@ -1,5 +1,5 @@
 <!doctype html>
-<title>painless</title>
+<title>painless web editor</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script type="text/javascript">
 function send(event, payload) {
@@ -20,7 +20,6 @@ function remove(p) {
 }
 </script>
 <section class="content">
-  <h1>painless</h1>
   {% if parameters|length %}
     <table class="parameter-table">
     {% for parameter in parameters %}
