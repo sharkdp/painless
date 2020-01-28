@@ -22,14 +22,16 @@ function remove(p) {
 <section class="content">
   <h1>painless</h1>
   {% if parameters|length %}
-    <table>
+    <table class="parameter-table">
     {% for parameter in parameters %}
       <tr id="{{parameter.name}}">
-        <td>
+        <td class="parameter-name">
           {{parameter.name}}
         </td>
-        <td>
+        <td class="parameter-value">
           <input data-name="{{parameter.name}}" value="{{parameter.value}}" onchange="update(this)" onkeyup="update(this)" onmousedown="update(this)">
+        </td>
+        <td>
           <input type="button" data-name="{{parameter.name}}" onclick="remove(this)" value="❌">
         </td>
       </tr>
