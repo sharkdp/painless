@@ -2,17 +2,21 @@
 <title>painless</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script type="text/javascript">
-function update_parameter(parameter) {
+function send(event, payload) {
   var request = new XMLHttpRequest();
-
-  var payload = {
-    name: parameter.dataset.name,
-    value: parameter.value
-  };
-
-  request.open("POST", "/update");
+  request.open("POST", "/" + event);
   request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
   request.send(JSON.stringify(payload));
+}
+
+function update(p) {
+  send("update", {name: p.dataset.name, value: p.value});
+}
+
+function remove(p) {
+  var name = p.dataset.name;
+  document.getElementById(name).remove();
+  send("remove", {name: name});
 }
 </script>
 <section class="content">
@@ -20,13 +24,13 @@ function update_parameter(parameter) {
   {% if parameters|length %}
     <table>
     {% for parameter in parameters %}
-      <tr>
+      <tr id="{{parameter.name}}">
         <td>
-          {{ parameter.name }}
+          {{parameter.name}}
         </td>
         <td>
-          <input data-name="{{parameter.name}}" value="{{parameter.value}}" onchange="update_parameter(this)" onkeyup="update_parameter(this)"
-          >
+          <input data-name="{{parameter.name}}" value="{{parameter.value}}" onchange="update(this)" onkeyup="update(this)" onmousedown="update(this)">
+          <input type="button" data-name="{{parameter.name}}" onclick="remove(this)" value="❌">
         </td>
       </tr>
     {% endfor %}

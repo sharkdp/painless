@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os.path as path
-from os import listdir
+from os import listdir, unlink
 from os.path import isfile
 
 from flask import Flask, render_template, request
@@ -42,3 +42,12 @@ def update():
     with open(path.join(BASE_PATH, name), "w") as f:
         f.write(value)
     return ""
+
+
+@app.route("/remove", methods=["POST"])
+def remove():
+    data = request.json
+    name = data["name"]
+    print(f"Removing parameter '{name}'")
+    unlink(path.join(BASE_PATH, name))
+    return "", 204
