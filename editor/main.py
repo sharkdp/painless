@@ -5,11 +5,13 @@ from os import listdir, unlink
 from os.path import isfile
 
 from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit
 
 
 BASE_PATH = "/tmp/painless"
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 
 def parse_parameter_file(entry):
@@ -27,27 +29,37 @@ def get_parameters():
     return parameters
 
 
+def send_parameters():
+    emit("parameter_list", {"parameters": get_parameters()})
+
+
 @app.route("/")
 def index():
-    parameters = get_parameters()
-    return render_template("base.html", parameters=parameters)
+    return render_template("base.html")
 
 
-@app.route("/update", methods=["POST"])
-def update():
-    data = request.json
-    name = data["name"]
-    value = data["value"]
+@socketio.on("connect", namespace="/painless")
+def connect():
+    send_parameters()
+
+
+@socketio.on("update", namespace="/painless")
+def update(msg):
+    name = msg["parameter"]
+    value = msg["value"]
     print(f"Updating parameter '{name}' to value '{value}'")
     with open(path.join(BASE_PATH, name), "w") as f:
         f.write(value)
     return ""
 
 
-@app.route("/remove", methods=["POST"])
-def remove():
-    data = request.json
-    name = data["name"]
+@socketio.on("remove", namespace="/painless")
+def remove(msg):
+    name = msg["parameter"]
     print(f"Removing parameter '{name}'")
     unlink(path.join(BASE_PATH, name))
-    return "", 204
+    send_parameters()
+
+
+if __name__ == "__main__":
+    socketio.run(app)
