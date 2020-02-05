@@ -3,15 +3,18 @@
 import os.path as path
 from os import listdir, unlink
 from os.path import isfile
+from threading import Thread
 
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
+from flask import Flask, render_template
+from flask_socketio import SocketIO
+
+from inotify_simple import INotify, flags
 
 
 BASE_PATH = "/tmp/painless"
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode="threading")
 
 
 def parse_parameter_file(entry):
@@ -30,7 +33,7 @@ def get_parameters():
 
 
 def send_parameters():
-    emit("parameter_list", {"parameters": get_parameters()})
+    socketio.emit("parameter_list", {"parameters": get_parameters()}, namespace="/painless")
 
 
 @app.route("/")
@@ -40,6 +43,12 @@ def index():
 
 @socketio.on("connect", namespace="/painless")
 def connect():
+    global thread
+    if not thread.isAlive():
+        thread = Thread(target=filesystem_watcher)
+        thread.daemon = True
+        thread.start()
+
     send_parameters()
 
 
@@ -61,5 +70,17 @@ def remove(msg):
     send_parameters()
 
 
+def filesystem_watcher():
+    inotify = INotify()
+    watch_flags = flags.CREATE | flags.DELETE | flags.MODIFY | \
+        flags.DELETE_SELF | flags.ATTRIB | flags.MOVED_TO
+    inotify.add_watch(BASE_PATH, watch_flags)
+    while True:
+        for event in inotify.read():
+            print(event)
+            send_parameters()
+
+
 if __name__ == "__main__":
+    thread = Thread()
     socketio.run(app)
