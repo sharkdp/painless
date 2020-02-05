@@ -14,7 +14,7 @@ app = Flask(__name__)
 
 def parse_parameter_file(entry):
     with open(path.join(BASE_PATH, entry), "r") as f:
-        value = f.readline()
+        value = f.readline().strip()
 
     return {"name": entry, "value": value}
 
