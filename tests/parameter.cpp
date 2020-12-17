@@ -201,3 +201,16 @@ TEST_CASE("Support for multiple threads") {
   auto future2 = std::async(wait_for_value_in_other_thread);
   future2.get();
 }
+
+TEST_CASE("Can be constructed from const values") {
+  const double pi = 3.14;
+  PAINLESS_PARAMETER(double_parameter, pi);
+  CHECK(double_parameter == pi);
+}
+
+TEST_CASE("Can be constructed from references") {
+  double pi = 3.14;
+  auto& pi_ref = pi;
+  PAINLESS_PARAMETER(double_parameter, pi_ref);
+  CHECK(double_parameter == pi);
+}
