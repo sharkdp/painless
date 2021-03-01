@@ -1,0 +1,41 @@
+<!doctype html>
+<title>painless web editor</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+  var socket = io.connect("http://" + document.domain + ":" + location.port + "/painless");
+
+  socket.on("parameter_list", function(msg) {
+    var parameters = $("#parameters");
+
+    parameters.empty();
+
+    msg.parameters.forEach(p => {
+      $("#parameters").append(
+        $("<tr>").append(
+          $("<td>").addClass("parameter-name").text(p.name)
+        ).append(
+          $("<td>").addClass("parameter-value").append(
+            $("<input>").attr("value", p.value).attr("placeholder", p.name).on("input", function() {
+              socket.emit("update", {"parameter": p.name, "value": this.value});
+            })
+          )
+        ).append(
+          $("<td>").append(
+            $("<input>").attr("type", "button").attr("value", "❌").click(function() {
+              socket.emit("remove", {"parameter": p.name});
+            })
+          )
+        )
+
+      );
+    });
+  });
+});
+</script>
+<section class="content">
+  <table class="parameter-table" id="parameters">
+  </table>
+</section>
